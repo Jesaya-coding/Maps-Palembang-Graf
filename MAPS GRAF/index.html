@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Visualisasi peta interaktif Kota Palembang dengan graf berbobot dan algoritma Dijkstra untuk menemukan jalur terpendek.">
+    <title>PalembangGraph — Peta Interaktif & Graf Berbobot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Loading Splash -->
+    <div id="loadingSplash" class="loading-splash">
+        <div class="splash-content">
+            <div class="splash-icon">
+                <svg viewBox="0 0 48 48" width="56" height="56" fill="none">
+                    <circle cx="24" cy="20" r="8" stroke="#4285F4" stroke-width="3" fill="rgba(66,133,244,0.15)" />
+                    <path d="M24 28c0 0-12 8-12 16h24c0-8-12-16-12-16z" fill="rgba(66,133,244,0.12)" stroke="#4285F4"
+                        stroke-width="2" />
+                    <circle cx="24" cy="20" r="3" fill="#4285F4" />
+                </svg>
+            </div>
+            <h2>PalembangGraph</h2>
+            <p>Memuat peta interaktif...</p>
+            <div class="splash-bar">
+                <div class="splash-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container (Google Maps style) -->
+    <div id="app" class="app-container">
+
+        <!-- Top Search Bar -->
+        <div class="top-bar">
+            <div class="top-bar-inner">
+                <button id="btnToggleSidebar" class="icon-btn" title="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
+                </button>
+                <div class="top-bar-brand">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+                        <circle cx="8" cy="12" r="3" fill="#4285F4" />
+                        <circle cx="18" cy="6" r="3" fill="#EA4335" />
+                        <circle cx="18" cy="18" r="3" fill="#34A853" />
+                        <line x1="8" y1="12" x2="18" y2="6" stroke="#5f6368" stroke-width="1.5" />
+                        <line x1="8" y1="12" x2="18" y2="18" stroke="#5f6368" stroke-width="1.5" />
+                        <line x1="18" y1="6" x2="18" y2="18" stroke="#5f6368" stroke-width="1.5" />
+                    </svg>
+                    <span>PalembangGraph</span>
+                </div>
+                <div class="search-box">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Cari lokasi di Palembang..." autocomplete="off">
+                    <div id="searchResults" class="search-results hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Left Sidebar Panel (Google Maps style) -->
+        <div id="sidebar" class="sidebar open">
+            <!-- Directions Panel -->
+            <div class="sidebar-section directions-panel">
+                <div class="panel-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4285F4" stroke-width="2">
+                        <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+                    </svg>
+                    <h3>Cari Rute Terpendek</h3>
+                </div>
+                <div class="direction-inputs">
+                    <div class="dir-input-row">
+                        <div class="dir-dot start"></div>
+                        <div class="dir-input-wrap">
+                            <select id="startNode">
+                                <option value="">Pilih titik awal...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="dir-swap">
+                        <div class="dir-line"></div>
+                        <button id="btnSwap" class="swap-btn" title="Tukar arah">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <path d="M7 16V4m0 12l-4-4m4 4l4-4M17 8v12m0-12l4 4m-4-4l-4 4" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="dir-input-row">
+                        <div class="dir-dot end"></div>
+                        <div class="dir-input-wrap">
+                            <select id="endNode">
+                                <option value="">Pilih titik tujuan...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button id="btnFindPath" class="btn-find">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                    Jalankan Dijkstra
+                </button>
+            </div>
+
+            <!-- Result Panel -->
+            <div id="resultPanel" class="sidebar-section result-panel hidden">
+                <div class="panel-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34A853" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                    <h3>Hasil Rute</h3>
+                    <button id="btnClearResult" class="btn-close" title="Tutup">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="resultContent"></div>
+            </div>
+
+            <!-- Step Trace -->
+            <div id="stepTrace" class="sidebar-section step-trace-panel hidden">
+                <div class="panel-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FBBC04" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18M9 3v18" />
+                    </svg>
+                    <h3>Langkah Dijkstra</h3>
+                    <button id="btnCloseTrace" class="btn-close" title="Tutup">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="stepTraceContent"></div>
+            </div>
+
+            <!-- Location Info -->
+            <div id="locationPanel" class="sidebar-section location-panel hidden">
+                <div class="panel-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EA4335" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    <h3 id="locationName">Detail Lokasi</h3>
+                    <button id="btnCloseLocation" class="btn-close" title="Tutup">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="locationContent"></div>
+            </div>
+
+            <!-- Graph Info -->
+            <div class="sidebar-section graph-info-panel">
+                <div class="panel-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4m0-4h.01" />
+                    </svg>
+                    <h3>Tentang Graf</h3>
+                </div>
+                <div class="graph-stats">
+                    <div class="g-stat"><span class="g-stat-val" id="statVertices">0</span><span
+                            class="g-stat-lbl">Simpul</span></div>
+                    <div class="g-stat"><span class="g-stat-val" id="statEdges">0</span><span
+                            class="g-stat-lbl">Sisi</span></div>
+                    <div class="g-stat"><span class="g-stat-val" id="statTotalDist">0</span><span
+                            class="g-stat-lbl">Total km</span></div>
+                </div>
+                <div class="graph-legend">
+                    <div class="gl-item"><span class="gl-dot" style="background:#4285F4"></span>Lokasi (Vertex)</div>
+                    <div class="gl-item"><span class="gl-line"></span>Jalan (Edge)</div>
+                    <div class="gl-item"><span class="gl-line active"></span>Jalur Terpendek</div>
+                    <div class="gl-item"><span class="gl-dot" style="background:#FBBC04"></span>Bobot (km)</div>
+                </div>
+                <button id="btnShowMatrix" class="btn-matrix">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+                    </svg>
+                    Lihat Adjacency Matrix
+                </button>
+            </div>
+        </div>
+
+        <!-- Matrix Modal -->
+        <div id="matrixModal" class="modal-overlay hidden">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <h3>📊 Adjacency Matrix — Graf Berbobot Palembang</h3>
+                    <button id="btnCloseMatrix" class="btn-close"><svg width="18" height="18" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg></button>
+                </div>
+                <div class="modal-body">
+                    <div class="matrix-scroll">
+                        <table id="adjMatrix" class="adj-matrix"></table>
+                    </div>
+                    <p class="matrix-note">* Nilai = jarak (km). ∞ = tidak ada jalur langsung. Matriks simetris (graf
+                        tak berarah).</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Controls -->
+        <div class="map-controls">
+            <button id="btnToggleEdges" class="map-ctrl-btn active" title="Tampilkan garis graf">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 12h16M4 12l4-4m-4 4l4 4" />
+                </svg>
+            </button>
+            <button id="btnToggleWeights" class="map-ctrl-btn active" title="Tampilkan bobot">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" /><text x="12" y="16" text-anchor="middle" font-size="10"
+                        fill="currentColor" stroke="none">W</text>
+                </svg>
+            </button>
+            <div class="ctrl-sep"></div>
+            <button id="btnResetView" class="map-ctrl-btn" title="Reset peta">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Map Layer Switcher -->
+        <div class="map-layers">
+            <button class="layer-btn active" data-layer="default" title="Peta Standar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6l11-4 11 4-11 4L1 6z"/><path d="M1 12l11 4 11-4"/><path d="M1 18l11 4 11-4"/></svg>
+                <span>Peta</span>
+            </button>
+            <button class="layer-btn" data-layer="satellite" title="Satelit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span>Satelit</span>
+            </button>
+            <button class="layer-btn" data-layer="traffic" title="Lalu Lintas">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/></svg>
+                <span>Traffic</span>
+            </button>
+            <div class="layer-sep"></div>
+            <button id="btn3D" class="layer-btn" title="Mode 3D">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                <span>3D</span>
+            </button>
+        </div>
+
+        <!-- Full screen map -->
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
